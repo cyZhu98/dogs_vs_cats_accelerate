@@ -43,3 +43,10 @@ model : pretrained swin transformer.
 
 如果要把数据集换回ImageNet，只要按照官方案例把```getLoader```改成```datasets.ImageFolder```等等+修改模型的```num_classes```就可以了。
 
+我看案例中没有指定```args.rank==0```才能```print```，所以运行的话应该会，有几张卡就会有几行重复的输出信息。我的代码中所有的```print```都替换为```accelerator.print```，作用是只有进程在gpu0 (rank=0)的时候才会输出信息(等于```if args.rank==0: print()```
+
+#### 说明
+
+按照个人的风格，将代码拆分成了几个模块。
+
+TODO
