@@ -2,12 +2,14 @@ import os
 import time
 import numpy as np
 import random
-from tqdm import tqdm
+import warnings
+from tqdm.auto import tqdm
 
 import torch
 import torch.nn as nn
 import torch.optim
 from torch.optim.lr_scheduler import OneCycleLR
+import torch.backends.cudnn as cudnn
 from accelerate import Accelerator
 import timm
 from transformers import get_linear_schedule_with_warmup, set_seed
@@ -25,7 +27,7 @@ def main():
         random.seed(args.seed)
         np.random.seed(args.seed)
         torch.manual_seed(args.seed)
-        torch.manual_seed_all(args.seed)
+        torch.cuda.manual_seed_all(args.seed)
         cudnn.deterministic = True
         warnings.warn('You have chosen to seed training. '
                       'This will turn on the CUDNN deterministic setting, '
@@ -53,7 +55,7 @@ def main_worker(args):
     )
     lr_scheduler = OneCycleLR(
         optimizer, max_lr=args.lr, epochs=args.epochs, steps_per_epoch=len(train_loader))
-    for epoch in range(args.epochs):
+    for epoch in tqdm(range(args.epochs), disable=not accelerator.is_local_main_process):
         train_one_epoch(train_loader, model, criterion, optimizer,
                         lr_scheduler, accelerator, epoch, args)
         acc = validate(val_loader, model, criterion,
