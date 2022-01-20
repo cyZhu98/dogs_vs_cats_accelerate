@@ -58,7 +58,7 @@ class ImageLoader(data.Dataset):
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         if self.transform is not None:
             img = self.transform(image=img)['image']
-        label = 0 if 'dog' in root else 1
+        label = 1 if 'dog' in root else 0
         return img, label
 
     def __len__(self):
