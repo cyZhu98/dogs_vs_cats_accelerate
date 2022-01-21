@@ -10,7 +10,7 @@ parser.add_argument('-b', '--batch-size', default=32,
                     type=int, help='mini-batch size, 8.7G memory per gpu with bs32, swinB 224')
 parser.add_argument('--lr', '--learning-rate', default=1e-5, type=float,
                     metavar='LR', help='initial learning rate', dest='lr')
-parser.add_argument('-j', '--workers', default=8, type=int, metavar='N',
+parser.add_argument('-j', '--workers', default=4, type=int, metavar='N',
                     help='number of data loading workers (default: 32)')
 parser.add_argument('--seed', default=42, type=int,
                     help='seed for initializing training. ')
@@ -19,6 +19,8 @@ parser.add_argument('-p', '--print_freq', default=10, type=int, metavar='N',
                     help='print frequency')
 parser.add_argument('-s', '--save', action='store_true',
                     help='save best model')
+parser.add_argument('--checkpoint', default=None, type=str,
+                    help='load model for testing')
 
 
 def return_args():

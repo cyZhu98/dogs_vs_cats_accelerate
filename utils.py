@@ -57,6 +57,11 @@ class ProgressMeter(object):
         self.meters = meters
         self.prefix = prefix
 
+    def display_common(self, batch):
+        entries = [self.prefix + self.batch_fmtstr.format(batch)]
+        entries += [str(meter) for meter in self.meters]
+        print('\t'.join(entries))
+
     def display(self, batch, accelerator):
         entries = [self.prefix + self.batch_fmtstr.format(batch)]
         entries += [str(meter) for meter in self.meters]

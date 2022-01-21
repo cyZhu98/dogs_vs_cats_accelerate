@@ -114,7 +114,7 @@ def validate(val_loader, model, criterion, optimizer, accelerator, args):
     progress = ProgressMeter(
         len(val_loader),
         [batch_time, losses, top1],
-        prefix='Test: ')
+        prefix='Evaluating: ')
 
     model.eval()
     end = time.time()

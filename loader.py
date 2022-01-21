@@ -51,6 +51,7 @@ class ImageLoader(data.Dataset):
         images = f'{split}' + '_images'
         self.images = eval(images)
         self.transform = transform
+        self.split = split
 
     def __getitem__(self, index):
         root = self.images[index]
@@ -58,8 +59,11 @@ class ImageLoader(data.Dataset):
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         if self.transform is not None:
             img = self.transform(image=img)['image']
-        label = 1 if 'dog' in root else 0
-        return img, label
+        if not self.split == 'test':
+            label = 0 if 'dog' in root else 1
+            return img, label   
+        else:
+            return img, int(root.split('/')[-1].split('.')[-2])
 
     def __len__(self):
         return len(self.images)
@@ -70,11 +74,12 @@ def getLoader(args, split):
         split = 'val'
     transform = train_transform if split == 'train' else test_transform
     dataset = ImageLoader(split, transform)
-    dataLoader = data.DataLoader(dataset, batch_size=args.batch_size, shuffle=split ==
-                                 'train', num_workers=args.workers, pin_memory=True, drop_last=split == 'train')
+    is_train = split == 'train'
+    times = 1 if is_train else 2
+    dataLoader = data.DataLoader(dataset, batch_size=args.batch_size * times, shuffle=is_train, num_workers=args.workers, pin_memory=True, drop_last=is_train)
     return dataLoader
 
 
 if __name__ == '__main__':
-    print(train_images[-1])
+    print(train_images[-1].split('.')[-2])
     pass

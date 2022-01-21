@@ -2,7 +2,7 @@
 
 ## TODO
 
-- [ ] add test function
+- [x] add test function
 
 ## Requirements
 
@@ -15,7 +15,11 @@
 
 ## Run
 
+### Train
+
 **only support training with gpu**
+
+download [Dataset.](https://www.kaggle.com/c/dogs-vs-cats-redux-kernels-edition/)
 
 make sure ```num_processes``` in [default_config.yaml](default_config.yaml) same as the number of you gpu
 
@@ -28,6 +32,14 @@ add ```--save``` in the end if you wish to save the best model
 如果要保存最佳模型，在命令末尾加上```--save```
 
 For more instruction about ```accelerater```, please refer to [its document](https://huggingface.co/docs/accelerate/quicktour.html) and its [example](https://github.com/huggingface/accelerate/blob/main/examples/cv_example.py).
+
+### Test
+
+```bash
+python test.py --DIR your_dataset_path --checkpoint model_save_path
+```
+
+example:  ```python test.py --DIR .. --checkpoitn ep1_acc99453```
 
 ## Explanation
 
@@ -49,4 +61,4 @@ model : pretrained swin transformer.
 
 按照个人的风格，将代码拆分成了几个模块。
 
-TODO
+如果要进一步刷分，可以增加更多的数据增强策略，更改模型等等。
