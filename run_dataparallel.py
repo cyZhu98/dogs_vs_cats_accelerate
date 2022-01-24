@@ -1,4 +1,5 @@
 import os
+os.environ['CUDA_VISIBLE_DEVICES'] = '0, 1, 2, 3'
 import time
 import numpy as np
 import random
@@ -10,7 +11,6 @@ import torch.nn as nn
 import torch.optim
 from torch.optim.lr_scheduler import OneCycleLR
 import torch.backends.cudnn as cudnn
-from accelerate import Accelerator
 import timm
 from transformers import get_linear_schedule_with_warmup, set_seed
 
@@ -35,46 +35,44 @@ def main():
                       'You may see unexpected behavior when restarting '
                       'from checkpoints.')
     main_worker(args)
+    
 
 
 def main_worker(args):
     global best_acc
-    accelerator = Accelerator()
-
+    # adjust batch size
+    args.batch_size = args.batch_size * torch.cuda.device_count()
+    args.lr = (args.lr / 4) * torch.cuda.device_count()
     train_loader = getLoader(args, 'train')
     val_loader = getLoader(args, 'val')
 
     model = timm.create_model(
         'swin_base_patch4_window7_224', pretrained=True, num_classes=2)
-
-    criterion = nn.CrossEntropyLoss()
+    model = nn.DataParallel(model).cuda()
+    criterion = nn.CrossEntropyLoss().cuda()
     optimizer = torch.optim.AdamW(model.parameters(), args.lr)
 
-    model, optimizer, train_loader, val_loader = accelerator.prepare(
-        model, optimizer, train_loader, val_loader
-    )
     lr_scheduler = OneCycleLR(
         optimizer, max_lr=args.lr, epochs=args.epochs, steps_per_epoch=len(train_loader))
+    
     progress_begin = time.time()
-    for epoch in tqdm(range(args.epochs), disable=not accelerator.is_local_main_process):
+    
+    for epoch in tqdm(range(args.epochs)):
         train_one_epoch(train_loader, model, criterion, optimizer,
-                        lr_scheduler, accelerator, epoch, args)
+                        lr_scheduler, epoch, args)
         acc = validate(val_loader, model, criterion,
-                       optimizer, accelerator, args)
+                       optimizer, args)
         if acc > best_acc:
             best_acc = acc
             if args.save:
                 if not os.path.exists('save'):
                     os.mkdir('save')
-                accelerator.wait_for_everyone()
-                unwrapped_model = accelerator.unwrap_model(model)
-                accelerator.save(unwrapped_model.state_dict(), os.path.join(
+                torch.save(model.module.state_dict(), os.path.join(
                     'save', f'ep{epoch}_acc{acc*1000:.0f}.pth'))
-                
     progress_end = time.time()
-    accelerator.print('Accelerate running time : {} s'.format(progress_end - progress_begin))
+    print('Dataparallel running time : {} s'.format(progress_end - progress_begin))
 
-def train_one_epoch(train_loader, model, criterion, optimizer, scheduler, accelerator, epoch, args):
+def train_one_epoch(train_loader, model, criterion, optimizer, scheduler, epoch, args):
     batch_time = AverageMeter('Time', ':6.3f')
     data_time = AverageMeter('Data', ':6.3f')
     losses = AverageMeter('Loss', ':.4e')
@@ -86,13 +84,13 @@ def train_one_epoch(train_loader, model, criterion, optimizer, scheduler, accele
 
     model.train()
     end = time.time()
-    for i, data in enumerate(train_loader):
+    for i, (img, label) in enumerate(train_loader):
         data_time.update(time.time() - end)
 
-        img, label = data
+        img, label = img.cuda(), label.cuda()
         output = model(img)
         loss = criterion(output, label)
-        accelerator.backward(loss)
+        loss.backward()
         optimizer.step()
         scheduler.step()
         optimizer.zero_grad()
@@ -106,11 +104,11 @@ def train_one_epoch(train_loader, model, criterion, optimizer, scheduler, accele
         end = time.time()
 
         if i % args.print_freq == 0:
-            progress.display(i, accelerator)
+            progress.display_common(i)
 
 
 @torch.no_grad()
-def validate(val_loader, model, criterion, optimizer, accelerator, args):
+def validate(val_loader, model, criterion, optimizer, args):
     batch_time = AverageMeter('Time', ':6.3f', Summary.NONE)
     losses = AverageMeter('Loss', ':.4e', Summary.NONE)
     top1 = AverageMeter('Acc@1', ':6.2f', Summary.AVERAGE)
@@ -121,8 +119,8 @@ def validate(val_loader, model, criterion, optimizer, accelerator, args):
 
     model.eval()
     end = time.time()
-    for i, data in enumerate(val_loader):
-        img, label = data
+    for i, (img, label) in enumerate(val_loader):
+        img, label = img.cuda(), label.cuda()
         output = model(img)
         loss = criterion(output, label)
 
@@ -133,9 +131,9 @@ def validate(val_loader, model, criterion, optimizer, accelerator, args):
         end = time.time()
 
         if i % args.print_freq == 0:
-            progress.display(i, accelerator)
+            progress.display_common(i)
 
-    progress.display_summary(accelerator)
+    progress.display_summary_common()
 
     return top1.avg
 

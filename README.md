@@ -4,6 +4,16 @@
 
 - [x] add test function
 
+## Overview
+
+Public score: 0.03304
+
+#### 耗时对比
+
+Accelerate : **1043.63** *seconds*
+
+Data Parallel : **1055.52** *seconds*
+
 ## Requirements
 
 * pytorch (1.7.1)
@@ -19,9 +29,9 @@
 
 **only support training with gpu**
 
-download [Dataset.](https://www.kaggle.com/c/dogs-vs-cats-redux-kernels-edition/)
+1. download [Dataset.](https://www.kaggle.com/c/dogs-vs-cats-redux-kernels-edition/)
 
-make sure ```num_processes``` in [default_config.yaml](default_config.yaml) same as the number of you gpu
+2. make sure ```num_processes``` in [default_config.yaml](default_config.yaml) same as the number of you gpu
 
 ```bash
 accelerate launch --config_file default_config.yaml run.py --DIR your_dataset_path
@@ -32,6 +42,8 @@ add ```--save``` in the end if you wish to save the best model
 如果要保存最佳模型，在命令末尾加上```--save```
 
 For more instruction about ```accelerater```, please refer to [its document](https://huggingface.co/docs/accelerate/quicktour.html) and its [example](https://github.com/huggingface/accelerate/blob/main/examples/cv_example.py).
+
+(**Optional**) Dataparallel : ```python run_dataparallel.py -- DIR your_dataset_path```
 
 ### Test
 
